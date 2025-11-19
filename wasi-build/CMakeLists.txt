@@ -24,11 +24,6 @@ target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-# Define WASI version macro for conditional compilation
-if(WASI_VERSION STREQUAL "wasip2")
-    target_compile_definitions(main PRIVATE WASIP2)
-endif()
-
 # Link against full protobuf
 target_link_libraries(main PRIVATE
     protobuf::libprotobuf

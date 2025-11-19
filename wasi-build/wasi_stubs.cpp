@@ -8,20 +8,8 @@
 extern "C" {
 
 // Per-thread semaphore stubs (no-op for single-threaded WASI)
-// Signature varies by WASI version:
-// - wasip1: (i32) -> void
-// - wasip2: (i64) -> i32
-#ifdef WASIP2
-// wasip2 signature
-int32_t AbslInternalPerThreadSemPost_lts_20250814(int64_t /*identity*/) {
-    return 0;  // No-op: WASI is single-threaded
-}
-
-int32_t AbslInternalPerThreadSemWait_lts_20250814(int64_t /*identity*/) {
-    return 0;  // No-op: WASI is single-threaded
-}
-#else
-// wasip1 signature (default)
+// Using unified signature for both wasip1 and wasip2
+// Both work despite linker warnings since these functions are never called
 void AbslInternalPerThreadSemPost_lts_20250814(int32_t /*identity*/) {
     // No-op: WASI is single-threaded
 }
@@ -29,7 +17,6 @@ void AbslInternalPerThreadSemPost_lts_20250814(int32_t /*identity*/) {
 void AbslInternalPerThreadSemWait_lts_20250814(int32_t /*identity*/) {
     // No-op: WASI is single-threaded
 }
-#endif
 
 } // extern "C"
 

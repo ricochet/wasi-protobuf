@@ -47,17 +47,19 @@ sudo dnf install protobuf-devel protobuf-compiler gtest-devel
 
 ```
 wasi-proto/
-├── CMakeLists.txt           # Native build configuration
-├── person.proto            # Protobuf message definition
+├── CMakeLists.txt              # Native build configuration
+├── person.proto                # Protobuf message definition
 ├── src/
-│   └── main.cpp           # Main executable demonstrating encode/decode
+│   └── main.cpp               # Main executable demonstrating encode/decode
 ├── test/
-│   └── person_test.cpp    # Unit tests for protobuf operations
+│   └── person_test.cpp        # Unit tests for protobuf operations
 └── wasi-build/
-    ├── CMakeLists.txt     # WASI build configuration
-    ├── wasi-sdk.cmake     # WASI toolchain file (in repo for reproducibility)
-    ├── wasm32-wasip1.cmake # vcpkg triplet (in repo for reproducibility)
-    └── wasi_stubs.cpp     # Threading stubs for WASI
+    ├── CMakeLists.txt         # WASI build configuration
+    ├── Makefile               # Build automation for wasip1 and wasip2
+    ├── wasi-sdk-unified.cmake # Shared WASI toolchain file
+    ├── wasm32-wasip1.cmake    # vcpkg triplet for WASI Preview 1
+    ├── wasm32-wasip2.cmake    # vcpkg triplet for WASI 0.2
+    └── wasi_stubs.cpp         # Threading stubs for WASI
 ```
 
 ## Building
@@ -81,25 +83,35 @@ cmake --build build
 
 ### WASI Build
 
+The project supports both WASIP1 and WASIP2 builds. A root-level Makefile provides convenient build targets.
+
 ```bash
-cd wasi-build
+# Set WASI SDK path (adjust path for your system)
+export WASI_SDK_PATH=/opt/wasi-sdk-28.0-arm64-macos
 
-# Set WASI SDK path
-export WASI_SDK_PATH=/path/to/wasi-sdk
+# Install dependencies (first time only)
+make install-deps-wasip1  # For WASI Preview 1
+make install-deps-wasip2  # For WASI 0.2
 
-# Configure with vcpkg using in-repo toolchain and triplet (for reproducibility)
-cmake -B build \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(pwd)/wasi-sdk.cmake \
-  -DVCPKG_OVERLAY_TRIPLETS=. \
-  -DVCPKG_TARGET_TRIPLET=wasm32-wasip1
+# Build WASI Preview 1 (core module)
+make wasip1
 
-# Build
-cmake --build build
+# Build WASI 0.2 (component)
+make wasip2
+
+# Or build all (native + wasip1)
+make all
 ```
 
-**Note**: All toolchain and triplet files are in the repository (wasi-build/ directory), making the project fully reproducible without requiring custom vcpkg configuration. The `-fno-exceptions` flag is automatically applied as WebAssembly doesn't support C++ exceptions.
+**Build outputs:**
+- `build-wasip1/main.wasm` - WASIP1 core module
+- `build-wasip2/main.wasm` - WASIP2 component
+
+**Note**:
+- All toolchain and triplet files are in the repository (wasi-build/ directory), making the project fully reproducible
+- The `-fno-exceptions` flag is automatically applied as WebAssembly doesn't support C++ exceptions
+- wasip2 uses `wasm-component-ld` to build proper WASIP2 components
+- Run `make help` to see all available targets
 
 ## Running
 
@@ -117,10 +129,25 @@ cmake --build build
 cd build && ctest --verbose
 ```
 
-### WASI Build
+### WASI Builds
 
+**WASI Preview 1:**
 ```bash
-wasmtime run wasi-build/build/main
+make run-wasip1
+```
+
+**WASI 0.2:**
+```bash
+make run-wasip2
+```
+
+**All targets:**
+```bash
+make run              # Run native binary
+make run-native       # Run native binary
+make run-wasip1       # Run WASI Preview 1
+make run-wasip2       # Run WASI 0.2
+make test             # Run native unit tests
 ```
 
 **Expected Output:**
@@ -146,18 +173,37 @@ Decoded Person:
 
 ## WASI Build Details
 
-The WASI build required several special configurations:
+Both WASI builds share common configurations:
 - Disabled C++ exceptions (`-fno-exceptions`)
 - Defined `__wasi__` to enable WASI-specific code paths in Abseil
 - Provided threading stubs for single-threaded WASI environment
 - Used `ABSL_FORCE_WAITER_MODE=4` to minimize threading requirements
 
+### WASI Preview 1 vs WASI 0.2
+
+**wasip1** (WASI Preview 1):
+- Builds as a traditional WebAssembly core module
+- Uses standard `wasm-ld` linker
+- Compatible with most WASI runtimes
+- Output: `build-wasip1/main.wasm`
+
+**wasip2** (WASI 0.2):
+- Builds as a WASI component using `wasm-component-ld`
+- Uses WASI 0.2 component model interfaces
+- Requires component-aware runtime (e.g., wasmtime with `-Scli`)
+- Output: `build-wasip2/main.wasm`
+- Larger binary size due to component model overhead
+
+Both builds use separate vcpkg triplets to ensure proper dependency isolation.
+
 ## Cleaning
 
 ```bash
-# Native build
-rm -rf build
+# Clean all builds (native + WASI)
+make clean
 
-# WASI build
-rm -rf wasi-build/build
+# Or clean individually
+rm -rf build                    # Native only
+rm -rf wasi-build/build-wasip1  # WASIP1 only
+rm -rf wasi-build/build-wasip2  # WASIP2 only
 ```
