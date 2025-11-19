@@ -1,0 +1,51 @@
+# Build directories
+build/
+build-*/
+wasi-build/build/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake.in
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Generated protobuf files
+*.pb.cc
+*.pb.h
+
+# Compiled binaries
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.wasm
+main
+person_test
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# vcpkg (if installed locally)
+vcpkg/
+vcpkg_installed/
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Temporary files
+*.log
+*.tmp
