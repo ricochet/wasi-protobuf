@@ -99,7 +99,7 @@ make wasip1
 # Build WASI 0.2 (component)
 make wasip2
 
-# Or build all (native + wasip1)
+# Or build all (native + wasip1 + wasip2)
 make all
 ```
 
@@ -108,9 +108,6 @@ make all
 - `build-wasip2/main.wasm` - WASIP2 component
 
 **Note**:
-- All toolchain and triplet files are in the repository (wasi-build/ directory), making the project fully reproducible
-- The `-fno-exceptions` flag is automatically applied as WebAssembly doesn't support C++ exceptions
-- wasip2 uses `wasm-component-ld` to build proper WASIP2 components
 - Run `make help` to see all available targets
 
 ## Running
@@ -182,17 +179,13 @@ Both WASI builds share common configurations:
 ### WASI Preview 1 vs WASI 0.2
 
 **wasip1** (WASI Preview 1):
-- Builds as a traditional WebAssembly core module
-- Uses standard `wasm-ld` linker
 - Compatible with most WASI runtimes
 - Output: `build-wasip1/main.wasm`
 
 **wasip2** (WASI 0.2):
-- Builds as a WASI component using `wasm-component-ld`
-- Uses WASI 0.2 component model interfaces
+- Uses WASIP2 component model interfaces
 - Requires component-aware runtime (e.g., wasmtime with `-Scli`)
 - Output: `build-wasip2/main.wasm`
-- Larger binary size due to component model overhead
 
 Both builds use separate vcpkg triplets to ensure proper dependency isolation.
 
