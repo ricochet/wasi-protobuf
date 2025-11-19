@@ -8,7 +8,20 @@
 extern "C" {
 
 // Per-thread semaphore stubs (no-op for single-threaded WASI)
-// Signature from linker warning: (i32) -> void
+// Signature varies by WASI version:
+// - wasip1: (i32) -> void
+// - wasip2: (i64) -> i32
+#ifdef WASIP2
+// wasip2 signature
+int32_t AbslInternalPerThreadSemPost_lts_20250814(int64_t /*identity*/) {
+    return 0;  // No-op: WASI is single-threaded
+}
+
+int32_t AbslInternalPerThreadSemWait_lts_20250814(int64_t /*identity*/) {
+    return 0;  // No-op: WASI is single-threaded
+}
+#else
+// wasip1 signature (default)
 void AbslInternalPerThreadSemPost_lts_20250814(int32_t /*identity*/) {
     // No-op: WASI is single-threaded
 }
@@ -16,23 +29,7 @@ void AbslInternalPerThreadSemPost_lts_20250814(int32_t /*identity*/) {
 void AbslInternalPerThreadSemWait_lts_20250814(int32_t /*identity*/) {
     // No-op: WASI is single-threaded
 }
-
-// LowLevelAlloc functions with exact mangled names
-// _ZN4absl12lts_2025081413base_internal13LowLevelAlloc5AllocEm
-void* _ZN4absl12lts_2025081413base_internal13LowLevelAlloc5AllocEm(unsigned long size) {
-    return malloc(size);
-}
-
-// _ZN4absl12lts_2025081413base_internal13LowLevelAlloc4FreeEPv
-void _ZN4absl12lts_2025081413base_internal13LowLevelAlloc4FreeEPv(void* ptr) {
-    free(ptr);
-}
-
-// _ZN4absl12lts_2025081413base_internal13LowLevelAlloc14AllocWithArenaEmPNS1_5ArenaE
-void* _ZN4absl12lts_2025081413base_internal13LowLevelAlloc14AllocWithArenaEmPNS1_5ArenaE(
-    unsigned long size, void* /*arena*/) {
-    return malloc(size);
-}
+#endif
 
 } // extern "C"
 
@@ -45,7 +42,25 @@ namespace base_internal {
 class LowLevelAlloc {
 public:
     class Arena {};
+
+    // Declare stub implementations as static methods
+    static void* Alloc(unsigned long size);
+    static void Free(void* ptr);
+    static void* AllocWithArena(unsigned long size, Arena* arena);
 };
+
+// Implement the static methods outside the class
+void* LowLevelAlloc::Alloc(unsigned long size) {
+    return malloc(size);
+}
+
+void LowLevelAlloc::Free(void* ptr) {
+    free(ptr);
+}
+
+void* LowLevelAlloc::AllocWithArena(unsigned long size, Arena* /*arena*/) {
+    return malloc(size);
+}
 
 // Signal-safe arena stubs
 static LowLevelAlloc::Arena g_sig_safe_arena;
